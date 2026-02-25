@@ -14,41 +14,71 @@ type SearchWidgetProps = {
 };
 
 export function SearchWidget({ query, summary, results }: SearchWidgetProps) {
-  const [localQuery, setLocalQuery] = React.useState(query);
-
   const topResult = results[0];
+  const truncatedQuery =
+    query.length > 80 ? `${query.slice(0, 77).trimEnd()}…` : query;
+
+  const domain =
+    topResult?.url &&
+    (() => {
+      try {
+        return new URL(topResult.url).hostname.replace(/^www\./, "");
+      } catch {
+        return undefined;
+      }
+    })();
 
   return (
     <div className="w-full max-w-md rounded-xl border border-border bg-card p-4 shadow-sm">
-      {/* Search bar */}
-      <div className="flex items-center gap-2 mb-4">
-        <input
-          type="text"
-          className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          value={localQuery}
-          onChange={(e) => setLocalQuery(e.target.value)}
-          placeholder="Search the web..."
-          readOnly
-        />
+      {/* Pseudo search bar */}
+      <div className="mb-4">
+        <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+          You asked
+        </div>
+        <div className="flex items-center gap-2 rounded-full border border-input bg-background px-3 py-1.5 text-xs shadow-inner">
+          <div className="size-4 rounded-full bg-primary/10 flex items-center justify-center">
+            <span className="text-[10px] text-primary">🔍</span>
+          </div>
+          <div
+            className="truncate text-xs text-foreground"
+            title={query}
+          >
+            {truncatedQuery || "Search the web..."}
+          </div>
+        </div>
       </div>
 
-      {/* Summary */}
-      <div className="mb-3 text-sm text-muted-foreground">{summary}</div>
+      {/* Answer */}
+      <div className="mb-3 rounded-lg border-l-4 border-primary/60 bg-muted/40 px-3 py-2">
+        <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-primary/80">
+          Answer
+        </div>
+        <div className="text-sm leading-relaxed text-foreground">{summary}</div>
+      </div>
 
       {/* Top result card */}
       {topResult ? (
-        <div className="rounded-lg border border-border bg-background p-3 text-sm">
-          {topResult.title && (
-            <div className="font-medium mb-1">{topResult.title}</div>
-          )}
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2 text-xs">
+          <div className="min-w-0">
+            {topResult.title && (
+              <div className="truncate font-medium text-foreground">
+                {topResult.title}
+              </div>
+            )}
+            {domain && (
+              <div className="text-[11px] text-muted-foreground">
+                Source: {domain}
+              </div>
+            )}
+          </div>
           {topResult.url && (
             <a
               href={topResult.url}
               target="_blank"
               rel="noreferrer"
-              className="text-xs text-primary underline break-all"
+              className="shrink-0 inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-medium text-primary hover:bg-primary/20"
             >
-              {topResult.url}
+              Open source
             </a>
           )}
         </div>
