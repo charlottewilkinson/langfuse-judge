@@ -10,56 +10,77 @@ export const searchWeb = tool({
     query: z.string().describe('The search query'),
   }),
   execute: async ({ query }) => {
-    const response = await client.search(query, {
-      maxResults: 5,
-      searchDepth: 'basic', // use 'advanced' for better results (costs 2 credits vs 1)
-    });
+    try {
+      const response = await client.search(query, {
+        maxResults: 5,
+        searchDepth: 'basic', // use 'advanced' for better results (costs 2 credits vs 1)
+      });
 
-    if (!response.results || response.results.length === 0) {
-      return 'I could not find any relevant, up-to-date information for that query.';
-    }
+      if (!response.results || response.results.length === 0) {
+        return {
+          summary: 'I could not find any relevant, up-to-date information for that query.',
+          results: [],
+        };
+      }
 
-    // Return a conversational, non-JSON summary so the model
-    // doesn’t surface raw arrays/objects to the user.
-    const topResults = response.results.slice(0, 3);
+      // Return a conversational, non-JSON summary so the model
+      // doesn’t surface raw arrays/objects to the user.
+      const topResults = response.results.slice(0, 3);
 
-    const summary = topResults
-      .map((r, index) => {
-        const title = r.title?.trim();
-        let content = r.content?.trim();
-        const url = r.url?.trim();
+      const summary = topResults
+        .map((r, index) => {
+          const title = r.title?.trim();
+          let content = r.content?.trim();
+          const url = r.url?.trim();
 
-        let sentence = '';
+          let sentence = '';
 
-        if (title) {
-          sentence += `Result ${index + 1} is "${title}". `;
-        }
-
-        if (content) {
-          // If the snippet looks like raw JSON or a big object dump,
-          // skip it to avoid ugly structured output.
-          const looksLikeJson =
-            content.startsWith('{') ||
-            content.startsWith('[') ||
-            content.includes("': {") ||
-            content.includes('": {');
-
-          if (!looksLikeJson) {
-            // Keep things short to avoid overwhelming the user.
-            const shortContent =
-              content.length > 240 ? content.slice(0, 237).trimEnd() + '…' : content;
-            sentence += shortContent + ' ';
+          if (title) {
+            sentence += `Result ${index + 1} is "${title}". `;
           }
-        }
 
-        if (url) {
-          sentence += `You can read more at ${url}.`;
-        }
+          if (content) {
+            // If the snippet looks like raw JSON or a big object dump,
+            // skip it to avoid ugly structured output.
+            const looksLikeJson =
+              content.startsWith('{') ||
+              content.startsWith('[') ||
+              content.includes("': {") ||
+              content.includes('": {');
 
-        return sentence.trim();
-      })
-      .join(' ');
+            if (!looksLikeJson) {
+              // Keep things short to avoid overwhelming the user.
+              const shortContent =
+                content.length > 240 ? content.slice(0, 237).trimEnd() + '…' : content;
+              sentence += shortContent + ' ';
+            }
+          }
 
-    return summary;
+          if (url) {
+            sentence += `You can read more at ${url}.`;
+          }
+
+          return sentence.trim();
+        })
+        .join(' ');
+
+      // Gemini tools expect a JSON object (Struct) as the
+      // function_response.response value, not a bare string.
+      return {
+        summary,
+        results: topResults.map((r) => ({
+          title: r.title,
+          url: r.url,
+        })),
+      };
+    } catch (error) {
+      console.error('searchWeb tool failed', error);
+      return {
+        summary:
+          'I had trouble reaching the web search service. Please try again in a moment or rephrase your question.',
+        results: [],
+        error: true,
+      };
+    }
   },
 });
