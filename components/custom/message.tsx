@@ -8,6 +8,7 @@ import { Streamdown } from "streamdown";
 import { BotIcon, UserIcon } from "./icons";
 import { PreviewAttachment } from "./preview-attachment";
 import { DynamicForm } from "./dynamic-form";
+import { SearchWidget } from "./search-widget";
 
 const isFormSubmissionMessage = (role: string, content: string | ReactNode) =>
   role === "user" && typeof content === "string" && content.startsWith("Form submitted: ");
@@ -52,7 +53,7 @@ export const Message = ({
               const { toolName, toolCallId, state } = toolInvocation;
 
               if (state === "result") {
-                const { result } = toolInvocation;
+                const { result, args } = toolInvocation as any;
 
                 return (
                   <div key={toolCallId}>
@@ -70,6 +71,12 @@ export const Message = ({
                           }}
                         />
                       )
+                    ) : toolName === "searchWeb" ? (
+                      <SearchWidget
+                        query={args?.query ?? ""}
+                        summary={result.summary ?? ""}
+                        results={result.results ?? []}
+                      />
                     ) : (
                       <div>{JSON.stringify(result, null, 2)}</div>
                     )}
