@@ -75,3 +75,11 @@ pnpm dev
 ```
 
 Your app template should now be running on [localhost:3000](http://localhost:3000/).
+
+### Set Up Environment Variables
+To enable web search capabilities, you will also need a Tavily API key:
+
+1. Get your API key from [Tavily](https://www.tavily.com).
+2. Add it to your `.env.local` file:
+   ```env
+   TAVILY_API_KEY='tvly-xxxxxxxxxxxx'
